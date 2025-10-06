@@ -1,6 +1,8 @@
 package Controller;
 
 import Entity.Transaction;
+import Entity.Enum.TransactionType;
+import Entity.User;
 import Service.Interfaces.TransactionService;
 
 import java.util.UUID;
@@ -13,18 +15,24 @@ public class TransactionController {
     }
 
     public Transaction deposit(double amount, UUID accountId) {
-        return transactionService.create(Entity.Enum.TransactionType.DEPOSIT, accountId, amount);
+        if (amount <= 0 || accountId == null) return null;
+        return transactionService.create(TransactionType.DEPOSIT, accountId, amount);
     }
 
     public Transaction withdraw(double amount, UUID accountId) {
-        return transactionService.create(Entity.Enum.TransactionType.WITHDRAW, accountId, amount);
+        if (amount <= 0 || accountId == null) return null;
+        return transactionService.create(TransactionType.WITHDRAW, accountId, amount);
     }
 
-    public Transaction internalTransfer(UUID sourceAccountId, UUID destAccountId, double amount) {
-        return ((Service.Inpement.TransactionServiceImplement) transactionService).internalTransfer(sourceAccountId, destAccountId, amount);
+    public Transaction internalTransfer(UUID sourceId, UUID destId, double amount) {
+        if (sourceId == null || destId == null || amount <= 0) return null;
+        return transactionService.internalTransfer(sourceId, destId, amount);
     }
 
-    public Transaction externalTransfer(UUID sourceAccountId, String externalAccountNumber, double amount) {
-        return ((Service.Inpement.TransactionServiceImplement) transactionService).externalTransfer(sourceAccountId, externalAccountNumber, amount);
+    public Transaction externalTransfer(UUID sourceId, String externalAccount, double amount) {
+        if (sourceId == null || externalAccount == null || amount <= 0) return null;
+        return transactionService.externalTransfer(sourceId, externalAccount, amount);
     }
+
+
 }

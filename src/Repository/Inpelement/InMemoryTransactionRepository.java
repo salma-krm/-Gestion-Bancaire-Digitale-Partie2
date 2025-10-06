@@ -2,12 +2,14 @@ package Repository.Inpelement;
 
 import Entity.Account;
 import Entity.Enum.TransactionType;
+import Entity.Enum.VirementStatus;
 import Entity.Transaction;
 import Repository.Interfaces.TransactionRepository;
 import Repository.Interfaces.AccountRepository;
 import com.systemeBancaire.com.DatabaseConnection;
 
 import java.sql.*;
+import java.time.Instant;
 import java.util.UUID;
 
 public class InMemoryTransactionRepository implements TransactionRepository {
@@ -17,29 +19,34 @@ public class InMemoryTransactionRepository implements TransactionRepository {
     public InMemoryTransactionRepository(AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
     }
-
     @Override
     public Transaction create(TransactionType type, double amount, UUID accountId) {
-        String sql = "INSERT INTO transactions (account_id, type, amount, created_at) VALUES (?, ?::transaction_type, ?, ?)";
+        try (Connection conn = DatabaseConnection.getInstance().getConnection()) {
 
-        try (Connection conn = DatabaseConnection.getInstance().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            String sql = "INSERT INTO transactions (id, account_id, type, amount, status, created_at) " +
+                    "VALUES (?, ?, ?::transaction_type, ?, ?::virement_status, ?)";
+            PreparedStatement stmt = conn.prepareStatement(sql);
 
-            stmt.setObject(1, accountId);
-            stmt.setString(2, type.name());
-            stmt.setDouble(3, amount);
-            stmt.setTimestamp(4, Timestamp.from(java.time.Instant.now()));
+            UUID transactionId = UUID.randomUUID();
+
+            stmt.setObject(1, transactionId);
+            stmt.setObject(2, accountId);
+            stmt.setString(3, type.name());
+            stmt.setDouble(4, amount);
+            stmt.setString(5, VirementStatus.PENDING.name());
+            stmt.setTimestamp(6, Timestamp.from(Instant.now()));
 
             stmt.executeUpdate();
 
-            // Charger le compte après transaction
             Account account = accountRepository.getById(accountId);
 
             Transaction transaction = new Transaction();
+            transaction.setId(transactionId);
             transaction.setAccount(account);
             transaction.setType(type);
             transaction.setAmount(amount);
-            transaction.setCreatedAt(java.time.Instant.now());
+            transaction.setStatus(VirementStatus.PENDING);
+            transaction.setCreatedAt(Instant.now());
 
             return transaction;
 
@@ -48,4 +55,11 @@ public class InMemoryTransactionRepository implements TransactionRepository {
             return null;
         }
     }
+
+    @Override
+    public void update(Transaction transaction) {
+
+    }
+
+
 }

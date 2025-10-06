@@ -1,47 +1,43 @@
-package Service.Inpement;
+package Service.Implement;
 
 import Entity.Account;
+import Entity.Enum.Mode;
+import Entity.Enum.OperationType;
 import Entity.Enum.TransactionType;
+import Entity.FeeRule;
 import Entity.Transaction;
 import Repository.Interfaces.AccountRepository;
 import Repository.Interfaces.TransactionRepository;
+import Service.Interfaces.FeeRuleService;
 import Service.Interfaces.TransactionService;
 
+import java.util.Currency;
 import java.util.UUID;
 
 public class TransactionServiceImplement implements TransactionService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final FeeRuleService feeRuleService;
 
-    public TransactionServiceImplement(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+    public TransactionServiceImplement(AccountRepository accountRepository,
+                                       TransactionRepository transactionRepository,
+                                       FeeRuleService feeRuleService) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.feeRuleService = feeRuleService;
     }
 
     @Override
     public Transaction create(TransactionType type, UUID accountId, double amount) {
-        if (accountId == null || amount <= 0) return null;
-
         Account account = accountRepository.getById(accountId);
-        if (account == null) {
-            System.out.println("Compte introuvable.");
-            return null;
-        }
+        if (account == null || amount <= 0) return null;
 
-        double newBalance;
-        if (type == TransactionType.DEPOSIT) {
-            newBalance = account.getBalance() + amount;
-        } else if (type == TransactionType.WITHDRAW) {
-            if (account.getBalance() < amount) {
-                System.out.println("Solde insuffisant.");
-                return null;
-            }
-            newBalance = account.getBalance() - amount;
-        } else {
-            System.out.println("Type de transaction non supporté pour cette méthode.");
-            return null;
-        }
+        if (type == TransactionType.WITHDRAW && account.getBalance() < amount) return null;
+
+        double newBalance = (type == TransactionType.DEPOSIT)
+                ? account.getBalance() + amount
+                : account.getBalance() - amount;
 
         account.setBalance(newBalance);
         accountRepository.update(accountId, account);
@@ -50,58 +46,64 @@ public class TransactionServiceImplement implements TransactionService {
     }
 
     @Override
-    public Transaction transfer(UUID sourceAccountId, UUID destAccountId, double amount) {
-        return internalTransfer(sourceAccountId, destAccountId, amount);
-    }
-
-    public Transaction internalTransfer(UUID sourceAccountId, UUID destAccountId, double amount) {
-        if (sourceAccountId == null || destAccountId == null || amount <= 0) return null;
-
-        Account source = accountRepository.getById(sourceAccountId);
-        Account dest = accountRepository.getById(destAccountId);
-
-        if (source == null || dest == null || !source.getActive() || !dest.getActive()) {
-            System.out.println("Comptes invalides ou inactifs.");
-            return null;
-        }
-
-        if (source.getBalance() < amount) {
-            System.out.println("Solde insuffisant sur le compte source.");
-            return null;
-        }
+    public Transaction internalTransfer(UUID sourceId, UUID destId, double amount) {
+        Account source = accountRepository.getById(sourceId);
+        Account dest = accountRepository.getById(destId);
+        if (source == null || dest == null || amount <= 0 || source.getBalance() < amount) return null;
 
         source.setBalance(source.getBalance() - amount);
         dest.setBalance(dest.getBalance() + amount);
+        accountRepository.update(sourceId, source);
+        accountRepository.update(destId, dest);
 
-        accountRepository.update(sourceAccountId, source);
-        accountRepository.update(destAccountId, dest);
+        Transaction out = transactionRepository.create(TransactionType.TRANSFER_OUT, amount, sourceId);
+        Transaction in = transactionRepository.create(TransactionType.TRANSFER_IN, amount, destId);
 
-        transactionRepository.create(TransactionType.TRANSFER_OUT, amount, sourceAccountId);
-        transactionRepository.create(TransactionType.TRANSFER_IN, amount, destAccountId);
+        out.setTransferOut(source);
+        out.setTransferIn(dest);
+        in.setTransferOut(source);
+        in.setTransferIn(dest);
 
-        System.out.println("✅ Virement interne de " + amount + " réussi !");
-        return null;
+        return out;
     }
 
-    public Transaction externalTransfer(UUID sourceAccountId, String externalAccountNumber, double amount) {
-        Account source = accountRepository.getById(sourceAccountId);
+    @Override
+    public Transaction externalTransfer(UUID sourceId, String externalAccountNumber, double amount) {
+        Account source = accountRepository.getById(sourceId);
 
-        if (source == null || !source.getActive()) {
-            System.out.println("Compte source invalide ou inactif.");
+        if (source == null) {
+            System.out.println("Compte source introuvable.");
             return null;
         }
 
-        if (amount <= 0 || source.getBalance() < amount) {
-            System.out.println("Montant invalide ou solde insuffisant.");
+        if (amount <= 0) {
+            System.out.println("Montant du virement invalide.");
             return null;
         }
 
-        source.setBalance(source.getBalance() - amount);
-        accountRepository.update(sourceAccountId, source);
+        double fees = 6.0;
 
-        transactionRepository.create(TransactionType.TRANSFER_OUT, amount, sourceAccountId);
 
-        System.out.println("✅ Virement externe vers " + externalAccountNumber + " réussi !");
-        return null;
+        Currency madCurrency = Currency.getInstance("MAD");
+        FeeRule feeRule = feeRuleService.getFeeRule(OperationType.TRANSFER_OUT, Mode.FIX, madCurrency);
+        if (feeRule != null && feeRule.isActive()) {
+            fees = feeRule.getValue().doubleValue();
+        }
+
+        if (source.getBalance() < amount + fees) {
+            System.out.println("Solde insuffisant pour couvrir le montant et les frais (" + fees + " MAD).");
+            return null;
+        }
+
+        source.setBalance(source.getBalance() - amount - fees);
+        accountRepository.update(sourceId, source);
+
+        Transaction tx = transactionRepository.create(TransactionType.TRANSFER_OUT, amount, sourceId);
+        System.out.println("Virement externe de " + amount + " MAD vers " + externalAccountNumber +
+                " effectué avec succès. Frais appliqués : " + fees + " MAD");
+
+        return tx;
     }
+
+
 }

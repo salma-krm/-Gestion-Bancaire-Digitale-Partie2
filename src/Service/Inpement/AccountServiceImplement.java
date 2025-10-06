@@ -21,14 +21,14 @@ public class AccountServiceImplement implements AccountService {
 
     @Override
     public Client save(Client client, Account account) {
-        if (clientRepository.getByCin(client.getCIN()) != null) {
-            System.out.println("Client déjà existant");
-            return null;
+        Client savedClient = clientRepository.getByCin(client.getCIN());
+        if (savedClient == null) {
+            savedClient = clientRepository.save(client);
         }
-        Client savedClient = clientRepository.save(client);
         accountRepository.save(account, savedClient);
         return savedClient;
     }
+
 
     @Override
     public Client getCinClient(String cin) {

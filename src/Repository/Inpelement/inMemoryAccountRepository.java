@@ -16,8 +16,8 @@ public class inMemoryAccountRepository implements AccountRepository {
 
     @Override
     public Client save(Account account, Client client) {
-        String sql = "INSERT INTO account (client_id, balance, type) " +
-                "VALUES (?, ?, ?::account_type) RETURNING id";
+        String sql = "INSERT INTO account (client_id, balance, type, is_active, created_at, updated_at) " +
+                "VALUES (?, ?, ?::account_type, ?, ?, ?) RETURNING id";
 
         try (Connection conn = DatabaseConnection.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -25,19 +25,23 @@ public class inMemoryAccountRepository implements AccountRepository {
             stmt.setObject(1, client.getId());
             stmt.setDouble(2, account.getBalance());
             stmt.setString(3, account.getType().name());
+            stmt.setBoolean(4, account.getIsActive());
+            stmt.setTimestamp(5, java.sql.Timestamp.from(account.getCreatedAt()));
+            stmt.setTimestamp(6, java.sql.Timestamp.from(account.getUpdatedAt()));
 
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 UUID accountId = (UUID) rs.getObject("id");
                 account.setId(accountId);
-                System.out.println("Compte enregistré avec succès avec ID = " + accountId);
+                System.out.println("✅ Compte enregistré avec succès avec ID = " + accountId);
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("❌ Erreur lors de l'insertion du compte : " + e.getMessage());
         }
         return client;
     }
+
 
     @Override
     public Account update(UUID accountId, Account newAccountData) {

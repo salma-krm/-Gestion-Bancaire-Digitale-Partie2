@@ -6,4 +6,5 @@ import java.util.UUID;
 
 public interface TransactionRepository {
     Transaction create(TransactionType type, double amount, UUID accountId);
+    void update(Transaction transaction);
 }
