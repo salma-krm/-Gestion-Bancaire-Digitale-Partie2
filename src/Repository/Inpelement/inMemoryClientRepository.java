@@ -94,7 +94,34 @@ public class inMemoryClientRepository  implements ClientRepository {
 
         return client;
     }
+    @Override
+    public Client getById(UUID id) {
+        String sql = "SELECT * FROM client WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-//    String getByEmail(String email);
-//    Client getAll();
+            stmt.setObject(1, id);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                Client client = new Client();
+                client.setId((UUID) rs.getObject("id"));
+                client.setFirstName(rs.getString("first_name"));
+                client.setLastName(rs.getString("last_name"));
+                client.setCIN(rs.getString("cin"));
+                client.setEmail(rs.getString("email"));
+                client.setPhoneNumber(rs.getString("phone"));
+                client.setSalaire(rs.getDouble("salaire"));
+                // Ajouter les comptes si nécessaire
+                return client;
+            }
+
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+
 }

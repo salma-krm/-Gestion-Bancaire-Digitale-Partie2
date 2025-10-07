@@ -35,8 +35,6 @@ public class InMemoryUserRepository implements UserRepository {
 
         return user;
     }
-
-
     @Override
     public User findByEmail(String email) {
         String sql = "SELECT * FROM \"user\" WHERE email = ?";

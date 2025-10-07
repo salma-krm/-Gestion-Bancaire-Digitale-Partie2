@@ -1,4 +1,4 @@
-// ===================== inMemoryAccountRepository =====================
+
 package Repository.Inpelement;
 
 import Entity.Account;
@@ -12,7 +12,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.UUID;
 
+
+
+
 public class inMemoryAccountRepository implements AccountRepository {
+
 
     @Override
     public Client save(Account account, Client client) {
@@ -33,11 +37,11 @@ public class inMemoryAccountRepository implements AccountRepository {
             if (rs.next()) {
                 UUID accountId = (UUID) rs.getObject("id");
                 account.setId(accountId);
-                System.out.println("✅ Compte enregistré avec succès avec ID = " + accountId);
+                System.out.println(" Compte enregistré avec succès avec ID = " + accountId);
             }
 
         } catch (Exception e) {
-            System.out.println("❌ Erreur lors de l'insertion du compte : " + e.getMessage());
+            System.out.println(" Erreur lors de l'insertion du compte : " + e.getMessage());
         }
         return client;
     }
@@ -68,7 +72,19 @@ public class inMemoryAccountRepository implements AccountRepository {
 
     @Override
     public Account getById(UUID id) {
-        String sql = "SELECT * FROM account WHERE id = ?";
+        String sql = """
+        SELECT a.*,
+               c.id AS client_id, 
+               c.firstname, 
+               c.lastname, 
+               c.email, 
+               c.phonenumber, 
+               c.salaire
+        FROM account a
+        JOIN client c ON a.client_id = c.id
+        WHERE a.id = ?
+    """;
+
         Account account = null;
 
         try (Connection conn = DatabaseConnection.getInstance().getConnection();
@@ -81,10 +97,25 @@ public class inMemoryAccountRepository implements AccountRepository {
                 account = new Account();
                 account.setId(UUID.fromString(rs.getString("id")));
                 account.setBalance(rs.getDouble("balance"));
+                account.setIsActive(rs.getBoolean("is_active"));
+                account.setCreatedAt(rs.getTimestamp("created_at").toInstant());
+                account.setUpdatedAt(rs.getTimestamp("updated_at").toInstant());
+
                 String typeStr = rs.getString("type");
                 if (typeStr != null) {
-                    account.setType(AccountType.valueOf(typeStr));
+                    account.setType(AccountType.valueOf(typeStr.toUpperCase()));
                 }
+
+                // Construction de l'objet Client
+                Client client = new Client();
+                client.setId(UUID.fromString(rs.getString("client_id")));
+                client.setFirstName(rs.getString("firstname"));
+                client.setLastName(rs.getString("lastname"));
+                client.setEmail(rs.getString("email"));
+                client.setPhoneNumber(rs.getString("phonenumber"));
+                client.setSalaire(rs.getDouble("salaire"));
+
+                account.setClient(client);
             }
 
         } catch (Exception e) {
@@ -93,6 +124,8 @@ public class inMemoryAccountRepository implements AccountRepository {
 
         return account;
     }
+
+
 
     @Override
     public Account getByidClient(UUID clientId) {

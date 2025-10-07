@@ -1,5 +1,5 @@
 package Service.Inpement;
-
+import Service.util.MensualiteRunnable;
 import Entity.*;
 import Entity.Enum.*;
 import Repository.Interfaces.*;
@@ -28,9 +28,35 @@ public class CreditServiceImplement implements CreditService {
             return null;
         }
 
+        if (account.getType() != AccountType.CREDIT) {
+            System.out.println("Ce n’est pas un compte de type CREDIT.");
+            return null;
+        }
+
         boolean hasActiveOrLate = creditRepository.hasActiveOrLateCredit(accountId);
         if (hasActiveOrLate) {
-            System.out.println("Vous avez déjà un crédit actif ou en retard.");
+            System.out.println("Le client a déjà un crédit actif ou en retard.");
+            return null;
+        }
+
+        Client client =   account.getClient();
+        if (client == null || client.getSalaire() <= 0) {
+            System.out.println("Salaire non défini ou invalide. ");
+            return null;
+        }
+
+        double mensualite;
+        if (creditType == CreditType.SIMPLE) {
+            double interetTotal = amount * (taux / 100);
+            mensualite = (amount + interetTotal) / duree;
+        }  else {
+            System.out.println("Type de crédit invalide.");
+            return null;
+        }
+
+        double plafondMensualite = client.getSalaire() * 0.4;
+        if (mensualite > plafondMensualite) {
+            System.out.printf("Mensualité %.2f dépasse 40%% du salaire %.2f\n", mensualite, plafondMensualite);
             return null;
         }
 
@@ -49,8 +75,28 @@ public class CreditServiceImplement implements CreditService {
         return creditRepository.save(credit);
     }
 
+
     @Override
-    public List<Credit> getCreditsByAccount(UUID accountId) {
-        return creditRepository.getCreditsByAccountId(accountId);
+    public boolean accepterCredit(UUID creditId) {
+        Credit credit = creditRepository.getById(creditId);
+
+        if (credit == null || credit.getStatus() != CreditStatus.PENDING) {
+            System.out.println("Crédit introuvable ou déjà traité.");
+            return false;
+        }
+
+        credit.setStatus(CreditStatus.ACTIVE);
+        credit.setUpdatedAt(Instant.now());
+
+        creditRepository.save(credit);
+
+        MensualiteRunnable task = new MensualiteRunnable(credit);
+        new Thread(task).start();
+
+        System.out.println("Crédit activé avec succès.");
+        return true;
     }
+
+
+
 }

@@ -28,12 +28,5 @@ public class ClientServiceImplement implements ClientService {
         return savedClient;
     }
 
-//      public Client getAll(){
-//
-//    }
-//    public  UUID getById(){
-//    }
-//     public String getByEmail(){
-//
-//    }
+
 }

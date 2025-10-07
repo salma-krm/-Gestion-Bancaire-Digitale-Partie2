@@ -7,18 +7,27 @@ import java.util.UUID;
 public class Client  {
     private UUID id ;
     private String  firstName  ;
-
     private String lastName  ;
     private String CIN ;
     private String phoneNumber ;
     private  String email ;
     private List<Account> accounts = new ArrayList<>();
-    public Client(String firstName, String lastName, String cin, String phoneNumber, String email) {
+    private double salaire;
+    public Client(String firstName, String lastName, String cin, String phoneNumber, String email,double salaire) {
         this.firstName = firstName ;
         this.lastName = lastName;
         this.CIN = cin ;
         this.phoneNumber = phoneNumber;
         this.email = email;
+        this.salaire = salaire;
+    }
+
+    public double getSalaire() {
+        return salaire;
+    }
+
+    public void setSalaire(double salaire) {
+        this.salaire = salaire;
     }
 
     public Client() {

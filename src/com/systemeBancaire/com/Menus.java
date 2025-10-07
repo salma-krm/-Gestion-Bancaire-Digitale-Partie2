@@ -38,11 +38,12 @@ public class Menus {
                 case 9 -> Main.virementInterne();
                 case 10 -> Main.virementExterne();
                 case 11 -> MenuGestionFeeRule();
-                case 12 -> Main.demanderCredit();
-                case 13 -> Main.currentUser = null;
+                case 12 -> Main.demandeCredit();
+                case 13 -> Main.validerCredit();
+                case 14 -> {return ;}
                 default -> System.out.println("Choix invalide");
             }
-        } while (choix != 12);
+        } while (choix != 0);
     }
 
     public static void showMenuTeller() {
@@ -68,7 +69,7 @@ public class Menus {
                 case 4 -> Main.retrait();
                 case 5 -> Main.virementInterne();
                 case 6 -> Main.virementExterne();
-                case 7 -> Main.demanderCredit();
+                case 7 -> Main.demandeCredit();
                 case 8 -> Main.currentUser = null;
                 default -> System.out.println("Choix invalide");
             }
@@ -78,32 +79,23 @@ public class Menus {
     public static void showMenuManager() {
         int choix;
         do {
-            System.out.println("\n---- Menu Manager ----");
-            System.out.println("1. Gestion des comptes");
-            System.out.println("2. Validation des opérations sensibles");
-            System.out.println("3. Gestion des crédits");
-            System.out.println("4. Rapports & Statistiques");
-            System.out.println("5. Gestion des frais & commissions");
-            System.out.println("6. Modifier mon profil");
-            System.out.println("7. Changer mot de passe");
-            System.out.println("8. Déconnexion");
+            System.out.println("\n=== Menu Manager ===");
+            System.out.println("1. Valider crédits");
+            System.out.println("1. Valider transactions");
+            System.out.println("0. Retour");
             System.out.print("Votre choix : ");
-            choix = scanner.nextInt();
-            scanner.nextLine();
+            choix = Main.scanner.nextInt();
+            Main.scanner.nextLine();
 
             switch (choix) {
-//                case 1 -> Main.gestionComptesManager();
-//                case 2 -> Main.validationOperationsSensibles();
-//                case 3 -> Main.gestionCredits();
-//                case 4 -> Main.rapportsStatistiques();
-                case 5 -> MenuGestionFeeRule();
-                case 6 -> Main.editProfil();
-//                case 7 -> Main.changePassword();
-                case 8 -> Main.currentUser = null;
-                default -> System.out.println("Choix invalide");
+                case 1 -> Main.validerCredit();
+                case 0 -> { return; }
+                default -> System.out.println("Choix invalide.");
             }
-        } while (choix != 8);
+
+        } while (choix != 0);
     }
+
 
     public static void MenuGestionFeeRule(){
         int choix;

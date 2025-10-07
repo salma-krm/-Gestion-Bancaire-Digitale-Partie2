@@ -56,14 +56,26 @@ public class AccountServiceImplement implements AccountService {
 
         return accountRepository.update(accountId, currentAccount);
     }
-
     @Override
     public Account getById(UUID id) {
         if (id == null) {
             return null;
         }
-        return accountRepository.getById(id);
+
+        Account account = accountRepository.getById(id);
+        if (account == null) {
+            return null;
+        }
+
+        UUID clientId = account.getClient() != null ? account.getClient().getId() : null;
+        if (clientId != null) {
+            Client client = clientRepository.getById(clientId);
+            account.setClient(client);
+        }
+
+        return account;
     }
+
 
     @Override
     public Account getByidClient(UUID clientId) {

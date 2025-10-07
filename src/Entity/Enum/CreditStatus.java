@@ -1,9 +1,9 @@
 package Entity.Enum;
 
 public  enum CreditStatus{
-    active,
-    late,
-    closed,
-    PENDING
+    PENDING,
+    ACTIVE,
+    LATE,
+        CLOSED
 
 }

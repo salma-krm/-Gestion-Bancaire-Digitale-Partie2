@@ -10,6 +10,7 @@ import Service.Interfaces.*;
 
 
 import java.math.BigDecimal;
+import java.security.Provider;
 import java.time.Instant;
 import java.util.Currency;
 import java.util.List;
@@ -26,7 +27,7 @@ public class Main {
     private static final AccountRepository accountRepository = new inMemoryAccountRepository();
     private static final TransactionRepository transactionRepository = new InMemoryTransactionRepository(accountRepository);
     private static final FeeRuleRepository feeRuleRepository = new inMemoryFeeRuleRepository();
-    private static final CreditRepository creditRepository = new inMemoryCreditRepository();
+    private static final CreditRepository creditRepository = new Repository.Inpelement.inMemoryCreditRepository();
 
     // Services
     private static final UserService userService = new UserServiceImplement(userRepository);
@@ -34,7 +35,7 @@ public class Main {
     private static final AccountService accountService = new AccountServiceImplement(accountRepository, clientRepository);
     private static final FeeRuleService feeruleService = new Service.Implement.FeeRuleServiceImplement(feeRuleRepository);
     private static final TransactionService transactionService = new Service.Implement.TransactionServiceImplement(accountRepository, transactionRepository,feeruleService);
-    private static final CreditService creditService = new CreditServiceImplement(creditRepository,accountRepository);
+    private static final CreditService creditService = new Service.Inpement.CreditServiceImplement(creditRepository,accountRepository);
 
 
     // Controllers
@@ -43,7 +44,7 @@ public class Main {
     private static final AccountController accountController = new AccountController(accountService);
     private static final TransactionController transactionController = new TransactionController(transactionService);
     private static final FeeRuleController feeRuleController = new FeeRuleController(feeruleService);
-    private static final CreditController creditController = new CreditController(creditService);
+    private static final controller.CreditController creditController = new controller.CreditController(creditService,accountService);
 
     public static User currentUser = null;
 
@@ -80,7 +81,9 @@ public class Main {
                 Menus.showMenuAdmin();
             } else if (currentUser.getRole() == Role.teller) {
                 Menus.showMenuTeller();
-            } else {
+            } else if (currentUser.getRole() == Role.manager){
+                Menus.showMenuManager();
+        }else {
                 System.out.println("Rôle non pris en charge.");
             }
         } else {
@@ -199,7 +202,7 @@ public class Main {
         double balance = scanner.nextDouble();
         scanner.nextLine();
 
-        Client client = new Client(firstName, lastName, CIN, phoneNumber, email);
+        Client client = new Client(firstName, lastName, CIN, phoneNumber, email,200000);
         Account account = new Account(client, balance, type, true);
 
         Client clientCreated = clientController.create(client, account);
@@ -393,49 +396,11 @@ public class Main {
         }
     }
 
-    public static void demanderCredit() {
-        System.out.print("CIN du client : ");
-        String cin = scanner.nextLine();
-
-        Client client = accountController.getCinClient(cin);
-        if (client == null) {
-            System.out.println("Client introuvable.");
-            return;
-        }
-
-        System.out.println("Comptes du client :");
-        for (Account acc : client.getAccounts()) {
-            System.out.println("ID: " + acc.getId() + " | Solde: " + acc.getBalance());
-        }
-
-        System.out.print("ID du compte à utiliser : ");
-        UUID accountId = UUID.fromString(scanner.nextLine());
-
-        System.out.print("Montant demandé : ");
-        double amount = scanner.nextDouble();
-
-        System.out.print("Durée (mois) : ");
-        int duree = scanner.nextInt();
-
-        System.out.print("Taux d'intérêt (%) : ");
-        float taux = scanner.nextFloat();
-        scanner.nextLine();
-
-        System.out.print("Justification : ");
-        String justification = scanner.nextLine();
-
-        System.out.print("Type de crédit ( simple,\n" +
-                "    composee,) : ");
-        CreditType type = CreditType.valueOf(scanner.nextLine().toUpperCase());
-
-        Credit credit = creditController.demanderCredit(accountId, amount, duree, taux, justification, type);
-
-        if (credit != null) {
-            System.out.println("Crédit demandé avec succès !");
-            System.out.println(credit);
-        } else {
-            System.out.println("Demande de crédit échouée.");
-        }
+    public static void demandeCredit(){
+        creditController.demanderCredit(scanner);
+    }
+    public static void validerCredit(){
+        creditController.validerCredit(scanner);
     }
 
     public static void createFeeRule() {
@@ -462,7 +427,6 @@ public class Main {
             System.out.println("Erreur : " + e.getMessage());
         }
     }
-
     public static void updateFeeRule() {
         try {
             System.out.println("\n--- Mise à jour d'une règle de frais ---");

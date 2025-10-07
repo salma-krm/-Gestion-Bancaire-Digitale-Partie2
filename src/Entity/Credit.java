@@ -20,12 +20,15 @@ public class Credit {
     private Instant updatedAt;
 
 
+
+
+
+
     public Credit() {
     }
-
     public Credit(UUID id, Double amount, int duree, float taux, FeeRule feeRule,
                   String justification, CreditType creditType, Account account,
-                  CreditStatus status, Instant createdAt, Instant updatedAt) {
+                  CreditStatus status, Instant createdAt, Instant updatedAt,double salaire) {
         this.id = id;
         this.amount = amount;
         this.duree = duree;
@@ -37,6 +40,7 @@ public class Credit {
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+
     }
 
 
